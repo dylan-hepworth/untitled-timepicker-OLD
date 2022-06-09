@@ -1,0 +1,138 @@
+/*
+    All colors used in the CORES app are used in this file. Unless it is completely unavoidable, we should always
+    use sass variables when defining colors in our other stylesheets (as opposed to hard-coded color
+    definitions such as "color:#d7d8da;").
+*/
+
+/* Shades of grey */
+$t4m_very_light_grey: #d7d8da;
+$t4m_light_grey: #bcbbbd;
+$t4m_med_grey: #656565;
+$t4m_dark_grey: #616161;
+$t4m_shadow_grey: #222;
+$t4m_pt_list_group_header_text: #333;
+$t4m_pt_list_background: #f5f5f5;
+$t4m_pt_list_group_header: #d1d2d4;
+
+/* Blues */
+$t4m_very_light_blue: #dff2fb;
+$t4m_light_blue: #d4eef9;
+$t4m_blue: #01ade7;
+$t4m_modal_overlay_blue: rgb(43 62 129);
+$t4m_blue_link: #006ca8;
+$cores_secondary_blue: #E0F3FB;
+
+/* Purples */
+$t4m_light_purple: #9b88ba;
+$t4m_dark_purple: #6e5a9a;
+
+/* Status colors */
+$t4m_warning: #ffc300;
+$t4m_bright_warning: #ff0;
+$t4m_success: #00c88b;
+$t4m_error: #fc2664;
+$t4m_info: #29abe2;
+$t4m_dnar: #a64dff; /* dnar refers to do-not-resuscitate and it's always associated with the color purple */
+
+
+
+
+
+// @import "../../assets/styles/colors";
+
+
+
+.time_picker_wrapper {
+    user-select: none;
+    width: 120px;
+    border-radius: 5px;
+    position: relative;
+
+    &.selection_open {
+        box-shadow: -1px 0 10px 1px rgba($t4m_light_grey, 0.5);
+
+        & > span {
+            border-radius: 5px 5px 0 0;
+        }
+    }
+
+    & > span {
+        display: flex;
+        justify-content: center;
+        width: 92px;
+        border: 1px solid $t4m_pt_list_group_header;
+        border-radius: 5px;
+        padding: 4px 13px;
+        cursor: pointer;
+        text-align: center;
+        background-color: #fff;
+        position: relative;
+        z-index: 2;
+    }
+
+    .selection_wrapper {
+        position: absolute;
+        box-shadow: -1px 0 10px 1px rgba($t4m_light_grey, 0.5);
+        border: 1px solid $t4m_pt_list_group_header;
+        width: calc(100% - 2px);
+        z-index: 0;
+        display: flex;
+        margin-top: -1px;
+        background-color: #fff;
+        border-radius: 0 0 5px 5px;
+        max-height: 100px;
+        overflow: hidden;
+
+        &.hidden {
+            display: none;
+        }
+        
+        .dropdown_wrapper {
+            width: calc(33% + 20px); /* 20px is to make up for the scroll bar */
+            ul {
+                list-style: none;
+                padding: 0;
+                height: 100%;
+                margin: 0;
+                overflow-y: auto;
+    
+                li {
+                    cursor: pointer;
+                    padding: 2px;
+                    text-align: center;
+                    transition: background-color 0.3s;
+
+                    &:hover {
+                        background-color: $t4m_very_light_blue;
+                    }
+
+                }
+            }
+
+            &:last-child {
+                width: 33%;
+            }
+        }
+    }
+    .input_overlay {
+        background: #fff;
+        text-align: center;
+        width: calc(100% - 4px);
+        height: calc(100% - 3px);
+        position: absolute;
+        top: 0;
+        left: 0;
+        border-radius: 5px;
+        font-size: 14px;
+        font-size: 15px;
+        border: none;
+    }    
+
+    input[type="time"] {
+        font-family: "Open Sans", sans-serif;
+    }
+
+    input[type="time"]::-webkit-calendar-picker-indicator {
+        background: none;
+    }
+}
