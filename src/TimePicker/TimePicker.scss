@@ -49,6 +49,12 @@ $light_blue: #dff2fb;
             width: 0;
             opacity: 0;
         }
+
+        &:disabled {
+            background-color: initial;
+            color: initial;
+            cursor: pointer;
+        }
     }
 
     .selection_wrapper {
@@ -65,7 +71,10 @@ $light_blue: #dff2fb;
         overflow: hidden;
 
         &.hidden {
-            display: none;
+            // Setting the height to 0 and moving the top position will completely hide the selection wrapper 
+            // but it will still be rendered to the DOM so that we can still set selected hours/minutes/etc... when not open
+            height: 0;
+            top: 16px;
         }
         
         .dropdown_wrapper {
@@ -93,6 +102,10 @@ $light_blue: #dff2fb;
             &:last-child {
                 width: 33%;
             }
+
+            &.hidden {
+                display: none;
+            }
         }
     }
     .input_overlay {
@@ -107,15 +120,12 @@ $light_blue: #dff2fb;
         font-size: 14px;
         font-size: 15px;
         border: none;
-    }    
-
-    input[type="time"] {
-        font-family: "Open Sans", sans-serif;
     }
+}
 
-    input[type="time"]::-webkit-calendar-picker-indicator {
-        background: none;
-    }
+.label {
+    text-align: left;
+    margin: 0 0 5px;
 }
 
 /* width */

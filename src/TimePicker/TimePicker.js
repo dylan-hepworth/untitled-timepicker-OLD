@@ -4,7 +4,11 @@ import "./TimePicker.scss";
 
 const TimePicker = ({
     timeSelected,
-    defaultTime
+    defaultTime,
+    label,
+    showDropdown=true,
+    allowInlineEdit=true,
+    use24HourFormat=false
 }) => {
     const date = new Date();
 
@@ -24,17 +28,76 @@ const TimePicker = ({
     const [timeValue, setTimeValue] = useState(defaultTime || "");
 
     // The select hour. By default set to current hour (1-12)
-    const [selectedHour, setSelectedHour] = useState((date.getHours() > 12) ? date.getHours() - 12 : date.getHours());
+    const [selectedHour, setSelectedHour] = useState("12");
 
     // The select minute. By default set to current minute
-    const [selectedMinute, setSelectedMinute] = useState(() => {
-        // Make sure we add a "0" in front of the minute if it's less than 10.
-        const val = "0" + date.getMinutes().toString();
-        return val.slice(-2);
-    });
+    const [selectedMinute, setSelectedMinute] = useState("00");
 
     // The selected AM/PM. By default set to current AM/PM
-    const [selectedAmPm, setSelectedAmPm] = useState(date.getHours() >= 12 ? "PM" : "AM");
+    const [selectedAmPm, setSelectedAmPm] = useState("AM");
+
+    const [showError, setShowError] = useState(false);
+
+    const [errorMessage, setErrorMessage] = useState("");
+    
+    // When the component loads for the first time, if there is a default time, make sure that it matches the correct format.
+    useEffect(() => {
+        if (defaultTime) {
+            if (use24HourFormat) {
+                if (!defaultTime.match(/^(\d{2}):(\d{2})$/)) {
+                    setShowError(true);
+                    setErrorMessage("Invalid time format. Please use the format: HH:MM AM/PM");
+                }
+            } else {
+                if (!defaultTime.match(/^(\d{2}):(\d{2})\s([PpAa][Mm])$/)) {
+                    setShowError(true);
+                    setErrorMessage("Invalid time format. Please use the format: HH:MM AM/PM");
+                }
+            }
+        }
+        
+        // Set the hour
+        let hour;
+
+        if (defaultTime) {
+            hour = parseInt(defaultTime.split(":")[0]);
+        } else {
+            if (use24HourFormat) {
+                hour = date.getHours();
+            } else {
+                hour = (date.getHours() > 12) ? date.getHours() - 12 : date.getHours();
+            }
+        }
+
+        // Update the dropdown value
+        updateInlineHour(hour.toString());
+
+
+        // Set the minute
+        let minute;
+
+        if (defaultTime) {
+            minute = defaultTime.split(":")[1].split(" ")[0];
+        } else {
+            // Make sure we add a "0" in front of the minute if it's less than 10.
+            minute = "0" + date.getMinutes().toString().slice(-2);
+        }
+
+        // Update the dropdown value
+        updateInlineMinute(minute.toString());
+
+        if (!use24HourFormat) {
+            // Set the AM/PM
+            let amPm;
+            if (defaultTime) {
+                amPm = defaultTime.split(" ")[1].toUpperCase();
+            } else {
+                amPm = date.getHours() >= 12 ? "PM" : "AM";
+            }
+
+            updateInlineAmPm(amPm);
+        }
+    }, []);
 
     // Keep reference to each value once set so that we can add the value back to the inputs if set and click away
     const [prevSetHour, setPrevSetHour] = useState(selectedHour);
@@ -51,7 +114,9 @@ const TimePicker = ({
 
     // Call the callback function and pass the selected time
     useEffect(() => {
-        timeSelected(timeValue);
+        if (timeValue) {
+            timeSelected(timeValue);
+        }
     }, [timeValue]);
 
     // Bold the selected time that was clicked, and remove the bold from the other times
@@ -110,7 +175,14 @@ const TimePicker = ({
     };
 
     const generateTime = (type) => {
-        let num = 12;
+        let num;
+
+        if (use24HourFormat) {
+            num = 23;
+        } else {
+            num = 12;
+        }
+
         let clickEvent = onSelectedHour;
         if (type === "minute") {
             num = 59;
@@ -120,7 +192,7 @@ const TimePicker = ({
         return [...Array(num)].map((e, i) => {
             const val = "0" + (i + 1).toString();
 
-            if (i == 0 && type === "minute") {
+            if ((i === 0 && type === "minute") || (i === 0 && use24HourFormat)) {
                 return (
                     // We have to set a key for the div wrapper so that we don't receive an error
                     <div key="b">
@@ -173,7 +245,9 @@ const TimePicker = ({
                 if (val > 59) {
                     val = val.slice(0, -1);
                 } else {
-                    if (val !== "00") {
+                    // When we first pass in the minute value, there is no "0" in front of it so it will only be 2 digits long. Use that value.
+                    // Otherwise check if the value passed was "00"
+                    if (val.length !== 2 && val !== "00") {
                         val = val.slice(1);
                     }                   
 
@@ -183,18 +257,24 @@ const TimePicker = ({
                         setPrevSetMinute(val);
 
                         setTimeout(() => {
-                            ref.current.focus();
+                            if (ref.current) {
+                                ref.current.focus();
+                            }
                         }, 100);
                     }
                 }
             } else {
-                if (val[0] === "0") {
-                    val = val.slice(1);
-                } else {
-                    val = val.slice(0, 2);
+                if (!use24HourFormat) {
+                    if (val[0] === "0") {
+                        val = val.slice(1);
+                    } else {
+                        val = val.slice(0, 2);
+                    }
                 }
-
-                if (val > 12) {
+                
+                if (use24HourFormat && val > 23) {
+                    val = val.slice(0, -1);
+                } else if (!use24HourFormat && val > 12) {
                     val = val.slice(0, -1);
                 } else {
                     // Set the hour to reference in case we click away
@@ -210,13 +290,15 @@ const TimePicker = ({
             }
         }
 
-        if (val.length === 1 && val > 0) {
-            val = "0" + val;
-            if (val > 1 && type === "hour") {
-                if (ref) {
-                    setTimeout(() => {
-                        ref.current.focus();
-                    }, 100);
+        if (!use24HourFormat) {
+            if (val.length === 1 && val > 0) {
+                val = "0" + val;
+                if (val > 1 && type === "hour") {
+                    if (ref) {
+                        setTimeout(() => {
+                            ref.current.focus();
+                        }, 100);
+                    }
                 }
             }
         }
@@ -260,7 +342,19 @@ const TimePicker = ({
     }
 
     const updateInlineHour = (e) => {
-        const val = handleInputMask(e.target.value, 'hour', minuteInputRef);
+        let input;
+
+        if (typeof e === "string" || typeof e === "number") {
+            if (parseInt(e) < 10) {
+                input = "0" + parseInt(e);
+            } else {
+                input = e;
+            }
+        } else {
+            input = e.target.value;
+        }
+
+        const val = handleInputMask(input, 'hour', minuteInputRef);
 
         setSelectedHour(val);
     }
@@ -274,7 +368,19 @@ const TimePicker = ({
     }
 
     const updateInlineMinute = (e) => {
-        const val = handleInputMask(e.target.value, 'minute', morningNightInputRef);
+        let input;
+
+        if (typeof e === "string" || typeof e === "number") {
+            if (parseInt(e) < 10) {
+                input = "0" + parseInt(e);
+            } else {
+                input = e;
+            }
+        } else {
+            input = e.target.value;
+        }
+
+        const val = handleInputMask(input, 'minute', morningNightInputRef);
 
         setSelectedMinute(val);
     }
@@ -299,14 +405,32 @@ const TimePicker = ({
         }
     }
 
-    const handleAmPmBlur = (e) => {
+    const handleHourBlur = () => {
+        if (selectedHour === "" || selectedHour.length < 2) {
+            setSelectedHour(prevSetHour);
+        }
+    }
+
+    const handleMinuteBlur = () => {
+        if (selectedMinute === "" || selectedMinute.length < 2) {
+            setSelectedMinute(prevSetMinute);
+        }
+    }
+
+    const handleAmPmBlur = () => {
         if (selectedAmPm === "") {
             setSelectedAmPm(prevSetMorningNight);
         }
     }
 
     const updateInlineAmPm = (e) => {
-        let val = e.target.value.toUpperCase();
+        let val;
+
+        if (typeof e === "string" || typeof e === "number") {
+            val = e[0].toUpperCase();
+        } else {
+            val = e.target.value.toUpperCase();
+        }
 
         if (val !== "A" && val !== "P") {
             setSelectedAmPm("");
@@ -323,9 +447,12 @@ const TimePicker = ({
             }
 
             setIsOpen(false);
-
-            wrapperRef.current.focus();
         }
+
+        setTimeout(() => {
+            // Give the DOM time to update then focus on the next hidden input
+            wrapperRef.current.focus();
+        }, 100);
     }
 
     const handleEditAmPm = () => {
@@ -336,36 +463,50 @@ const TimePicker = ({
         }
     }
 
-    return (
-        <div className={`time_picker_wrapper ${(isOpen) ? "selection_open" : ""}`}>
-            <div className="time_picker_input">
-                <input className="time_input" type="text" value={selectedHour} onChange={updateInlineHour} onClick={handleEditHour} onFocus={handleEditHour} ref={hourInputRef} />
-                <span>:</span>
-                <input className="time_input" type="text" value={selectedMinute} onChange={updateInlineMinute} onClick={handleEditMinute} onFocus={handleEditMinute} ref={minuteInputRef}/>
-                <input className="time_input" type="text" value={selectedAmPm} onChange={updateInlineAmPm} onKeyUp={handleEnterPressAmPm} onClick={handleEditAmPm} onFocus={handleEditAmPm} onBlur={handleAmPmBlur} ref={morningNightInputRef} />
-                <input className="time_input" type="text" ref={wrapperRef} />
+    if (showError) {
+        return (
+            <div className="time_picker_wrapper error">
+                Error: {errorMessage}
             </div>
-            {/* We will always render the selection dropdown, otherwise it will re-render every time the dropdown is opened and we'll lose our selections */}
-            <div className={`selection_wrapper ${(isOpen) ? "" : "hidden"}`}>
-                <div className="dropdown_wrapper">
-                    <ul ref={hourDropDownRef}>
-                        {generateTime()}
-                    </ul>
-                </div>
-                <div className="dropdown_wrapper">
-                    <ul ref={minuteDropDownRef}>
-                        {generateTime("minute")}
-                    </ul>
-                </div>
-                <div className="dropdown_wrapper">
-                    <ul ref={morningNightDropDownRef}>
-                        <li onClick={onSelectedAmPm}>AM</li>
-                        <li onClick={onSelectedAmPm}>PM</li>
-                    </ul>
+        );
+    } else {
+        return (
+            <div>
+                {label && <p className="label">{label}</p>}
+                <div className={`time_picker_wrapper ${(showDropdown && isOpen) ? "selection_open" : ""}`}>
+                    <div className="time_picker_input">
+                        <input className="time_input" type="text" value={selectedHour} disabled={!allowInlineEdit} onChange={updateInlineHour} onClick={handleEditHour} onFocus={handleEditHour} onBlur={handleHourBlur} ref={hourInputRef} />
+                        <span>:</span>
+                        <input className="time_input" type="text" value={selectedMinute} disabled={!allowInlineEdit} onChange={updateInlineMinute} onClick={handleEditMinute} onFocus={handleEditMinute} onBlur={handleMinuteBlur} ref={minuteInputRef}/>
+                        {!use24HourFormat && (
+                            <input className="time_input" type="text" value={selectedAmPm} disabled={!allowInlineEdit} onChange={updateInlineAmPm} onKeyUp={handleEnterPressAmPm} onClick={handleEditAmPm} onFocus={handleEditAmPm} onBlur={handleAmPmBlur} ref={morningNightInputRef} />
+                        )}
+                        
+                        <input className="time_input" type="text" ref={wrapperRef} />
+                    </div>
+                    {/* We will always render the selection dropdown, otherwise it will re-render every time the dropdown is opened and we'll lose our selections */}
+                    <div className={`selection_wrapper ${(showDropdown && isOpen) ? "" : "hidden"}`}>
+                        <div className="dropdown_wrapper">
+                            <ul ref={hourDropDownRef}>
+                                {generateTime()}
+                            </ul>
+                        </div>
+                        <div className="dropdown_wrapper">
+                            <ul ref={minuteDropDownRef}>
+                                {generateTime("minute")}
+                            </ul>
+                        </div>
+                        <div className={`dropdown_wrapper ${use24HourFormat ? "hidden": ""}`}>
+                            <ul ref={morningNightDropDownRef}>
+                                <li onClick={onSelectedAmPm}>AM</li>
+                                <li onClick={onSelectedAmPm}>PM</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    );
+        );
+    }
 };
 
 TimePicker.propTypes = {
