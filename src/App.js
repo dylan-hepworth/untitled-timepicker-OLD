@@ -1,27 +1,27 @@
-import logo from './logo.svg';
-import './App.css';
-import TimePicker from './TimePicker/TimePicker';
+import { React } from "react";
+import TimePicker from "./TimePicker/TimePicker";
+import "./App.css";
 
 const timeSelected = (time) => {
-  console.log("time", time);
-}
+	console.log("time", time);
+};
 
 function App() {
-  return (
-    <div className="App">
-      <h2>TimePicker</h2>
-      <TimePicker 
-        timeSelected={timeSelected} 
-        // defaultTime={"09:49 AM"}
-        // label={"Select a Time"}
-        // showDropdown={false}
-        // allowInlineEdit={false}
+	return (
+		<div className="App">
+			<TimePicker 
+				timeSelected={timeSelected} 
+				defaultTime={"09:49 AM"}
+				// label={"Select a Time"}
+				// showDropdown={false}
+				// allowInlineEdit={false}
+				// use24HourFormat={true}
+				// compactMode={true}
+				// incrementBy={15}
 
-        // TODOS -=============
-        // use24HourFormat={true}
-      />
-    </div>
-  );
+			/>
+		</div>
+	);
 }
 
 export default App;
